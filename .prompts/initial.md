@@ -17,3 +17,15 @@ Basically, we want to build a **mcp sever** for PostgreSQL database that can pro
 5. use stdin and stdout for communication between the server and the agent.
 6. certain level of abstraction is in need, incase we want to support other SQL databases like mysql, sqlite, etc.
 7. explore the internet, make sure we leverage the most popular and modern deps for the project.
+
+
+
+## Round 1
+1. make sure only **Select** queries are allowed. Even produced by the mcp's ai itself.
+2. abstract ai provider, support OpenAI as well.
+
+
+--- not applied --
+
+## Round 2
+1. the `schema` tool 's output is a bit complex, the ascii illustration itself should demonstrate foreign key relationships. 
