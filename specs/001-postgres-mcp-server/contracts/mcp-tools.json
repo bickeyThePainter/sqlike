@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SQLlike MCP Server Tools",
+  "description": "MCP tool definitions for SQL database interaction (PostgreSQL, MySQL, SQLite, etc.)",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "query",
+      "description": "Execute a database query using natural language or SQL. Returns structured results. For best results, call 'schema' first to understand the database structure.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "Natural language query (e.g., 'show me all active users') or raw SQL (must be a SELECT statement)"
+          },
+          "database": {
+            "type": "string",
+            "description": "Target database identifier. Optional if only one database is configured or a default is set."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Maximum rows to return. Defaults to server-configured limit (typically 1000)."
+          }
+        },
+        "required": ["input"]
+      },
+      "outputSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Successful query result",
+            "properties": {
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "type": { "type": "string" },
+                    "nullable": { "type": "boolean" }
+                  }
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": { "type": "array" }
+              },
+              "row_count": { "type": "integer" },
+              "truncated": { "type": "boolean" },
+              "total_available": { "type": ["integer", "null"] },
+              "executed_sql": { "type": "string" },
+              "execution_time_ms": { "type": "number" }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Clarification needed for ambiguous query",
+            "properties": {
+              "type": { "const": "clarification_needed" },
+              "message": { "type": "string" },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "description": { "type": "string" },
+                    "sql": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Error response",
+            "properties": {
+              "error": { "type": "string" },
+              "message": { "type": "string" },
+              "details": { "type": "object" },
+              "suggestions": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "schema",
+      "description": "Retrieve the database schema including tables, columns, types, and relationships. Call this before 'query' to understand the data structure.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "Target database identifier. Optional if only one database is configured or a default is set."
+          },
+          "table": {
+            "type": "string",
+            "description": "Specific table name to retrieve schema for. Omit to get all tables."
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "database": { "type": "string" },
+          "tables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": ["string", "null"] },
+                "columns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string" },
+                      "nullable": { "type": "boolean" },
+                      "default": { "type": ["string", "null"] },
+                      "description": { "type": ["string", "null"] }
+                    }
+                  }
+                },
+                "primary_key": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "foreign_keys": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "columns": { "type": "array", "items": { "type": "string" } },
+                      "references_table": { "type": "string" },
+                      "references_columns": { "type": "array", "items": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "ascii_diagram": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "help",
+      "description": "Get help information about available tools, recommended workflow, and usage examples.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string" },
+                      "required": { "type": "boolean" },
+                      "description": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "workflow": { "type": "string" },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": { "type": "string" },
+                "tool": { "type": "string" },
+                "input": { "type": "object" },
+                "expected_behavior": { "type": "string" }
+              }
+            }
+          },
+          "databases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "identifier": { "type": "string" },
+                "description": { "type": ["string", "null"] },
+                "is_default": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
